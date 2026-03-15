@@ -19,5 +19,38 @@ export async function GET(
     return NextResponse.json({ error: "Stream not found" }, { status: 404 });
   }
 
-  return NextResponse.redirect(url, 302);
+  // Proxy the HLS manifest instead of 302 redirect — Samsung AVPlay
+  // cannot follow HTTP redirects for HLS streams, causing CONNECTION_FAILED.
+  try {
+    const upstream = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      redirect: "follow",
+    });
+
+    if (!upstream.ok) {
+      return new NextResponse(`Upstream error: ${upstream.status}`, { status: 502 });
+    }
+
+    const body = await upstream.text();
+    const contentType = upstream.headers.get("content-type") || "application/vnd.apple.mpegurl";
+
+    // For HLS manifests, rewrite relative URLs to absolute so the player
+    // can fetch segments directly from the origin.
+    let rewritten = body;
+    if (contentType.includes("mpegurl") || url.endsWith(".m3u8")) {
+      const base = url.substring(0, url.lastIndexOf("/") + 1);
+      rewritten = body.replace(/^(?!#)(?!https?:\/\/)(.+)$/gm, base + "$1");
+    }
+
+    return new NextResponse(rewritten, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "no-cache",
+      },
+    });
+  } catch (e: any) {
+    return new NextResponse(`Proxy error: ${e.message}`, { status: 502 });
+  }
 }
