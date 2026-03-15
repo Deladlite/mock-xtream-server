@@ -1,0 +1,21 @@
+{
+  "name": "mock-xtream-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mock Xtream Codes API server for Samsung TV app QA testing. Serves public domain content only.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.2.21",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "typescript": "^5.3.3"
+  }
+}
